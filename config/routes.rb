@@ -1,4 +1,6 @@
 Rails.application.routes.draw do
+  mount ActionCable.server => "/cable"
+
   root to: 'messages#index'
   post '/whatsapp-messages', to: 'messages#get_messages'
   resources :messages
