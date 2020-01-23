@@ -1,10 +1,33 @@
 class MessagesController < ApplicationController
   before_action :set_message, only: [:show, :edit, :update, :destroy]
+  skip_before_action :verify_authenticity_token, only: :get_messages
 
   # GET /messages
   # GET /messages.json
   def index
-    @messages = Message.all
+  end
+
+  # POST /messagesAWS
+  def get_messages
+    p "***" * 10
+
+    data = request[:messages].first
+    message = Message.create(
+      body: data['body'],
+      sender_name: data['senderName'],
+      author: data['author'],
+      receiver: data['chatId'],
+      chat_name: data['chatName'],
+      time: data['time']
+    )
+
+    if message.save
+      ActionCable.server.broadcast "messages_channel",
+                  html: MessagesController.render(partial: 'messages/message', locals: { message: message })
+      render json: message
+    else
+      render json: { errors: message.errors.full_messages }, status: 400
+    end
   end
 
   # GET /messages/1
@@ -69,6 +92,6 @@ class MessagesController < ApplicationController
 
     # Never trust parameters from the scary internet, only allow the white list through.
     def message_params
-      params.require(:message).permit(:body)
+      params.require(:message).permit(:body, :author, :sender_name, :receiver, :chat_name, :time)
     end
 end
